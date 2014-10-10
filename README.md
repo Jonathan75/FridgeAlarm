@@ -1,4 +1,4 @@
 FridgeAlarm
 ===========
 
-Arduino base door alarm with time delay.  
+Arduino based door alarm with time delay.  
