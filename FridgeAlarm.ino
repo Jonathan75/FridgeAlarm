@@ -1,14 +1,16 @@
 #include <pitches.h>
+#include <StopWatch.h> //http://playground.arduino.cc/Code/StopWatchClass
 const int melodyPin = 3;
-//const int doorSwitch1 = 11;
-const int doorSwitch2 = 12;
+int doorSwitches[] = {11,12};
+int doorCount = 0;
 const int light = 13;
 
 const int timeout = 2;
 int timeoutCount = 0;
+StopWatch time;
 
 int melody[] = { NOTE_F6, NOTE_D6,0};
-int tempo[] = {3,6,1};
+int tempo[] = {1,32,1};
 
 void alarm()
 {      
@@ -53,23 +55,33 @@ void buzz(int targetPin, long frequency, long length) {
 
 }
 
+
+
 void setup() 
 {      
   Serial.begin(9600);
   
   pinMode(light, OUTPUT);  
-//  pinMode(doorSwitch1, INPUT_PULLUP);  
-  pinMode (doorSwitch2, INPUT_PULLUP);
+
+  doorCount = sizeof(doorSwitches) / sizeof( int );
+  for(int i = 0; i < doorCount; i++)
+  {
+    pinMode(doorSwitches[i], INPUT_PULLUP);
+  }
+  
   pinMode(melodyPin, OUTPUT);
+  
+  time = StopWatch(StopWatch::SECONDS);
+  Serial.println("ready");
 }
 
 bool isDoorOpen()
 {
-//  if (digitalRead(doorSwitch1) == HIGH)
-//    return true;
-  
-  if (digitalRead(doorSwitch2) == HIGH)
-    return true;
+  for(int i = 0; i < doorCount; i++)
+  {
+    if (digitalRead(doorSwitches[i]) == HIGH)
+      return true;
+  }
     
   return false;
 }
@@ -79,29 +91,46 @@ bool IsDoorClosed()
   return !isDoorOpen();
 }
 
-bool shouldAlarm()
-{ 
-  if (IsDoorClosed())
+bool shouldLight()
+{
+  return isDoorOpen();
+}
+
+void lightAlert(bool on)
+{
+  
+  if(on)
+  {
+      Serial.println("light alert");
+      digitalWrite(light, HIGH);
+      time.start();
+  }
+  else
   {
     digitalWrite(light, LOW);
-    timeoutCount = 0;
-    return false;
-  }   
-  
-  digitalWrite(light, HIGH);
-  delay(1000);
-  
-  timeoutCount++;
-  if(timeoutCount >= timeout)
-    return true;
+    time.reset(); 
+  }  
+}
 
-  return false;
+bool shouldAlarm()
+{ 
+  Serial.println("should alarm");
+  Serial.println(time.elapsed());
+  return time.elapsed() >= timeout;
 }
 
 void loop() 
 {     
-  if (shouldAlarm())
+  if(shouldLight())
   {
-      alarm();
+    Serial.println("should light");
+    lightAlert(true);
+    if (shouldAlarm())
+        alarm();
   }
+  else
+    lightAlert(false); 
 }
+
+
+
